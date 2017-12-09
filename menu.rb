@@ -89,6 +89,7 @@ class Menu
 
   def show_stack
     puts "#{name}, your stack is #{game.stack}"
+    puts "dealer stack is #{game.dealer.stack}"
   end
 
   def new_game_or_exit?
