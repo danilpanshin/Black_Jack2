@@ -1,113 +1,79 @@
+require_relative 'player'
+require_relative 'dealer'
 require_relative 'hand'
-
-require_relative 'bank'
+require_relative 'deck'
+require_relative 'card'
 
 class Game
-
-  attr_accessor :hand, :bank
+  attr_reader :player, :dealer
 
   def initialize
-    @hand = Hand.new
-    @bank = Bank.new
-    @bank.bet
+    @deck = Deck.new
+    @player = Player.new(@deck)
+    @dealer = Dealer.new(@deck)
   end
 
-  def take_card
-    @hand.user_take_card
-    @hand.user_points
-    @hand.dealer_take_card
-    @hand.dealer_points
-    open_cards
+  def new_game
+    clear_hands
+    2.times { player.hand.add_card }
+    2.times { dealer.hand.add_card }
+    bet
   end
 
-  def open_cards
-    @hand.user_points
-    @hand.dealer_points
-    puts "your cards #{@hand.user_cards}"
-    puts "your points  #{@hand.user_points}"
+  def show_cards(player)
+    player.hand.cards
+  end
 
-    puts "deal cards #{@hand.dealer_cards}"
-    puts "deal points #{@hand.dealer_points}"
+  def show_score(player)
+    player.hand.count_score
+  end
 
-    if @hand.user_points > 21 && @hand.dealer_points > 21
-      @bank.draw
-      puts 'draw'
+  def player_take_card
+    return true if player.hand.cards.size > 2
+    player.hand.add_card
+    false
+  end
 
-    elsif @hand.user_points > 21
-      @bank.dealer_win
-      puts 'deal win'
-      puts "your bank #{@bank.user_bank}"
-      puts "deal bank #{@bank.dealer_bank}"
-    elsif @hand.dealer_points > 21
-      @bank.user_win
-      puts 'user win'
-      puts "your bank #{@bank.user_bank}"
-      puts "deal bank #{@bank.dealer_bank}"
-    elsif @hand.user_points > @hand.dealer_points
-      @bank.user_win
-      puts 'user win'
-      puts "your bank #{@bank.user_bank}"
-      puts "deal bank #{@bank.dealer_bank}"
-    elsif @hand.user_points < @hand.dealer_points
-      @bank.dealer_win
-      puts 'deal win'
-      puts "your bank #{@bank.user_bank}"
-      puts "deal bank #{@bank.dealer_bank}"
-    elsif @hand.dealer_points == @hand.user_points
-      @bank.draw
-      puts 'draw'
-      puts "your bank #{@bank.user_bank}"
-      puts "deal bank #{@bank.dealer_bank}"
-    end
-
-    if @bank.user_bank.zero?
-      puts "Game over. #{@user_name} loose. Start new game? yes/no"
-      start = gets.chomp
-      if start == 'yes'
-        Interface.new
-      elsif start == 'no'
-        abort
+  def who_win
+    dealer_score = dealer.hand.count_score
+    player_score = player.hand.count_score
+    if player_score > dealer_score
+      if player_score < 22
+        player
+      else
+        dealer
       end
-    elsif @bank.dealer_bank.zero?
-      puts 'Game over. Dealer loose. Start new game? yes/no'
-      start = gets.chomp
-      if start == 'yes'
-        Interface.new
-      elsif start == 'no'
-        abort
+    elsif player_score < dealer_score
+      if dealer_score > 21
+        player
+      else
+        dealer
       end
     end
   end
 
-  def skip
-    puts "#{@user_name} cards #{@hand.user_cards}"
-
-    @hand.user_points
-
-    puts "#{@user_name} points #{@hand.user_sum}"
-
-    @hand.dealer_take_card
-
-    if @hand.dealer_cards.length == 2
-      puts 'dealer cards [* *]'
-    elsif @hand.dealer_cards.length == 3
-      puts 'dealer cards [* * *]'
+  def stack
+    winner = who_win
+    if winner == player
+      player.win
+    elsif winner == dealer
+      dealer.win
+    else
+      player.draw
+      dealer.draw
     end
-    puts "Take card - 1
-          Open cards - 2
-          Skip a move - 3"
-    choose = gets.chomp.to_i
-
-    case choose
-      when 1
-        take_card
-      when 2
-        open_cards
-      when 3
-        skip
-    end
+    player.stack
   end
 
+  private
 
+  def bet
+    player.bet
+    dealer.bet
+  end
 
+  def clear_hands
+    player.hand.clear
+    dealer.hand.clear
+  end
 end
